@@ -1,0 +1,62 @@
+# ==================================================
+# OS / Editor
+# ==================================================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.iml
+
+# ==================================================
+# Python
+# ==================================================
+**/__pycache__/
+**/*.py[cod]
+**/*$py.class
+
+**/.venv/
+**/venv/
+**/env/
+**/ENV/
+
+**/.pytest_cache/
+**/.mypy_cache/
+**/.cache/
+**/*.log
+
+**/.env
+**/.env.*
+!**/.env.example
+
+# ==================================================
+# iot-bigdata-anomaly (project subfolder)
+# ==================================================
+
+# Spark / Big Data runtime (inside iot-anomaly-system)
+iot-anomaly-system/spark-app/checkpoints/
+iot-anomaly-system/spark-app/*checkpoint*/
+iot-anomaly-system/spark-app/*state*/
+
+iot-anomaly-system/spark-app/tmp/
+iot-anomaly-system/spark-app/temp/
+iot-anomaly-system/tmp/
+iot-anomaly-system/temp/
+
+iot-anomaly-system/spark-app/.ivy2/
+iot-anomaly-system/spark-app/.m2/
+iot-anomaly-system/spark-app/.pip/
+iot-anomaly-system/spark-app/.python/
+
+# Docker / runtime data (if mounted to local folders)
+iot-anomaly-system/data/
+iot-anomaly-system/volumes/
+iot-anomaly-system/.docker/
+
+# Observability runtime data (data only, keep provisioning/config)
+iot-anomaly-system/grafana/
+iot-anomaly-system/influxdb/
+iot-anomaly-system/postgres/
+
+# Keep JDBC jar by default (do NOT ignore)
+# If you want to ignore it, uncomment:
+# iot-bigdata-anomaly/spark-app/postgresql.jar

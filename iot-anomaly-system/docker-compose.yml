@@ -1,0 +1,115 @@
+services:
+  # ----------------------------
+  # Kafka (official Apache image, KRaft mode, single node)
+  # ----------------------------
+  kafka:
+    image: apache/kafka:3.7.2
+    container_name: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      # KRaft single node
+      KAFKA_NODE_ID: "1"
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+
+      # Listeners
+      KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+
+      # Dev-friendly
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+
+  # ----------------------------
+  # InfluxDB 2.x
+  # ----------------------------
+  influxdb:
+    image: influxdb:2.7
+    container_name: influxdb
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=admin12345
+      - DOCKER_INFLUXDB_INIT_ORG=iot-org
+      - DOCKER_INFLUXDB_INIT_BUCKET=iot-bucket
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=iot-token-123
+    volumes:
+      - influx_data:/var/lib/influxdb2
+
+  # ----------------------------
+  # PostgreSQL
+  # ----------------------------
+  postgres:
+    image: postgres:16
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=iot
+      - POSTGRES_PASSWORD=iotpass
+      - POSTGRES_DB=iotdb
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  # ----------------------------
+  # MinIO (S3-compatible)
+  # ----------------------------
+  minio:
+    image: minio/minio:latest
+    container_name: minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=minioadmin
+      - MINIO_ROOT_PASSWORD=minioadmin123
+    volumes:
+      - minio_data:/data
+
+  # ----------------------------
+  # Grafana
+  # ----------------------------
+  grafana:
+    image: grafana/grafana:11.2.0
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+
+  # ----------------------------
+  # Spark (official Apache image)
+  # ----------------------------
+  spark:
+    image: apache/spark:3.5.1
+    container_name: spark
+    command: ["sleep", "infinity"]
+    volumes:
+      - ./spark-app:/opt/spark-app
+    depends_on:
+      - kafka
+      - influxdb
+      - postgres
+      - minio
+
+volumes:
+  kafka_data:
+  influx_data:
+  pg_data:
+  minio_data:
+  grafana_data:
