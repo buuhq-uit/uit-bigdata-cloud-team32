@@ -118,7 +118,7 @@ void loop() {
 
     http.begin(url);
     int httpCode = http.GET();
-
+    
     if (httpCode == 200) {
       Serial.println("Data sent OK");
     } else {
