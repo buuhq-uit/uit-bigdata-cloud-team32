@@ -1,0 +1,189 @@
+from __future__ import annotations
+
+import json
+import os
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
+from typing import Any, Dict, Optional
+
+from fastapi import FastAPI, Header, HTTPException
+from pydantic import BaseModel, Field
+from kafka import KafkaProducer
+
+
+# =========================
+# Config
+# =========================
+APP_NAME = "iot-ingress-rest-api"
+
+KAFKA_BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP", "kafka:9092")
+KAFKA_TOPIC_RAW = os.getenv("KAFKA_TOPIC_RAW", "iot.sensor.raw")
+
+DEFAULT_LOCATION = os.getenv("DEFAULT_LOCATION", "farm-zone-1")
+DEFAULT_MODEL = os.getenv("DEFAULT_MODEL", "ESP32")
+
+# Simple API key auth
+API_KEY = os.getenv("API_KEY", "team32-secret")
+API_KEY_HEADER = os.getenv("API_KEY_HEADER", "X-API-Key")  # for docs only
+
+# Kafka producer (created in lifespan)
+producer: KafkaProducer | None = None
+
+
+# =========================
+# Helpers
+# =========================
+def utc_iso_ts() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def require_api_key(x_api_key: Optional[str]) -> None:
+    if not x_api_key or x_api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+
+def clamp(v: float, lo: float, hi: float) -> float:
+    return max(lo, min(hi, v))
+
+
+# =========================
+# Request model
+# =========================
+class IngestPayload(BaseModel):
+    """
+    Supports two payload styles:
+
+    A) Recommended:
+      {
+        "device_id": "esp32-001",
+        "metrics": {"temperature": 27.5, "humidity": 60.2, "soil_moisture": 33.1}
+      }
+
+    B) ESP32-friendly flat fields:
+      {
+        "device_id": "esp32-001",
+        "temperature": 27.5,
+        "humidity": 60.2,
+        "soil_moisture": 33.1
+      }
+    """
+
+    device_id: str = Field(..., examples=["esp32-001", "sim-001"])
+    ts: Optional[str] = Field(None, description="ISO timestamp; server will fill if omitted")
+    location: Optional[str] = None
+    model: Optional[str] = None
+
+    # Option A
+    metrics: Optional[Dict[str, float]] = None
+
+    # Option B
+    temperature: Optional[float] = None
+    humidity: Optional[float] = None
+    soil_moisture: Optional[float] = None
+
+
+# =========================
+# FastAPI lifespan
+# =========================
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global producer
+    # Startup
+    producer = KafkaProducer(
+        bootstrap_servers=KAFKA_BOOTSTRAP,
+        value_serializer=lambda v: json.dumps(v).encode("utf-8"),
+        key_serializer=lambda k: k.encode("utf-8"),
+        acks="all",
+        linger_ms=20,
+    )
+    yield
+    # Shutdown
+    if producer:
+        try:
+            producer.flush(timeout=10)
+        except Exception:
+            pass
+        producer.close()
+
+
+app = FastAPI(title=APP_NAME, lifespan=lifespan)
+
+
+# =========================
+# Routes
+# =========================
+@app.get("/health")
+def health():
+    return {"status": "ok", "service": APP_NAME}
+
+
+@app.post("/ingest")
+def ingest(
+    payload: IngestPayload,
+    x_api_key: Optional[str] = Header(default=None, alias="X-API-Key"),
+):
+    """
+    Receive sensor data from ESP32 (HTTP), normalize, then produce to Kafka topic iot.sensor.raw.
+
+    Auth:
+      Header: X-API-Key: <API_KEY>
+    """
+    require_api_key(x_api_key)
+
+    global producer
+    if not producer:
+        raise HTTPException(status_code=500, detail="Kafka producer not ready")
+
+    # Build metrics map (merge both styles)
+    metrics: Dict[str, float] = {}
+    if payload.metrics:
+        metrics.update(payload.metrics)
+
+    if payload.temperature is not None:
+        metrics["temperature"] = float(payload.temperature)
+    if payload.humidity is not None:
+        metrics["humidity"] = float(payload.humidity)
+    if payload.soil_moisture is not None:
+        metrics["soil_moisture"] = float(payload.soil_moisture)
+
+    if not metrics:
+        raise HTTPException(status_code=400, detail="No metrics provided")
+
+    # Lightweight validation / normalization for common sensors
+    # (kept simple for this project; avoid rejecting borderline values)
+    if "humidity" in metrics and metrics["humidity"] is not None:
+        metrics["humidity"] = clamp(float(metrics["humidity"]), 0.0, 100.0)
+    if "soil_moisture" in metrics and metrics["soil_moisture"] is not None:
+        metrics["soil_moisture"] = clamp(float(metrics["soil_moisture"]), 0.0, 100.0)
+
+    msg: Dict[str, Any] = {
+        "ts": payload.ts or utc_iso_ts(),
+        "device_id": payload.device_id,
+        "location": payload.location or DEFAULT_LOCATION,
+        "model": payload.model or DEFAULT_MODEL,
+        "metrics": metrics,
+        "source": "ingress-rest-api",
+    }
+
+    try:
+        producer.send(KAFKA_TOPIC_RAW, key=payload.device_id, value=msg)
+        producer.flush(timeout=10)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"Failed to publish to Kafka: {e}")
+
+    return {
+        "status": "sent",
+        "topic": KAFKA_TOPIC_RAW,
+        "device_id": payload.device_id,
+        "metrics": list(metrics.keys()),
+    }
+
+
+# =========================
+# Local run entrypoint
+# =========================
+if __name__ == "__main__":
+    # Allows: python ingestion-api/ingress-rest-api.py
+    import uvicorn
+
+    uvicorn.run(app, host="0.0.0.0", port=8000)

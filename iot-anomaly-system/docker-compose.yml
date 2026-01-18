@@ -107,6 +107,24 @@ services:
       - postgres
       - minio
 
+  # ----------------------------
+  # Ingress
+  # ----------------------------
+  ingestion-api:
+    build:
+      context: ./ingestion-api
+    container_name: ingestion-api
+    environment:
+      - KAFKA_BOOTSTRAP=kafka:9092
+      - KAFKA_TOPIC_RAW=iot.sensor.raw
+      - DEFAULT_LOCATION=farm-zone-1
+      - DEFAULT_MODEL=ESP32
+      - API_KEY=team32-secret
+    ports:
+      - "8000:8000"
+    depends_on:
+      - kafka
+    restart: unless-stopped
 volumes:
   kafka_data:
   influx_data:
