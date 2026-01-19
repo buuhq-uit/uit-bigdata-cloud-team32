@@ -56,7 +56,7 @@ iot-anomaly-system/.docker/
 iot-anomaly-system/grafana/
 iot-anomaly-system/influxdb/
 iot-anomaly-system/postgres/
-
+iot-anomaly-system/postgres-data/
 # Keep JDBC jar by default (do NOT ignore)
 # If you want to ignore it, uncomment:
 # iot-bigdata-anomaly/spark-app/postgresql.jar

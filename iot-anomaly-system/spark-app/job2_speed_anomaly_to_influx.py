@@ -77,8 +77,8 @@ CHECKPOINT_DIR = os.getenv("CHECKPOINT_DIR", "/tmp/spark-checkpoints/iot_anomaly
 # Postgres (event-level anomalies only)
 WRITE_TO_POSTGRES = os.getenv("WRITE_TO_POSTGRES", "false").lower() == "true"
 PG_URL = os.getenv("PG_URL", "jdbc:postgresql://postgres:5432/iotdb")
-PG_USER = os.getenv("PG_USER", "iot")
-PG_PASSWORD = os.getenv("PG_PASSWORD", "iotpass")
+PG_USER = os.getenv("PG_USER", "postgres")
+PG_PASSWORD = os.getenv("PG_PASSWORD", "P@sswordDb#Pi!2025")
 PG_TABLE = os.getenv("PG_TABLE", "anomalies")
 
 # InfluxDB 2.x via HTTP

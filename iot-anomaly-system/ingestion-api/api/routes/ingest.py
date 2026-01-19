@@ -56,5 +56,8 @@ def ingest(
         "status": "sent",
         "topic": KAFKA_TOPIC_RAW,
         "device_id": payload.device_id,
-        "metrics": list(metrics.keys()),
+        "location": payload.location or DEFAULT_LOCATION,
+         "model": payload.model or DEFAULT_MODEL,
+        # "metrics": list(metrics.keys()),
+        "metrics": metrics,
     }

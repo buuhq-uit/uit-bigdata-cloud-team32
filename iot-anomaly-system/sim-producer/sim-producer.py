@@ -74,7 +74,7 @@ class TempHumidityGenerator(MetricGenerator):
         base_hum: float = 70.0,
         temp_noise: float = 0.5,
         hum_noise: float = 1.5,
-        temp_anomaly_prob: float = 0.05,
+        temp_anomaly_prob: float = 0.15,
         temp_anomaly_add_range: tuple[float, float] = (8.0, 15.0),
     ):
         super().__init__(ctx)
@@ -110,7 +110,7 @@ class SoilMoistureGenerator(MetricGenerator):
         ctx: DeviceContext,
         base_soil: float = 35.0,
         soil_noise: float = 2.0,
-        anomaly_prob: float = 0.03,
+        anomaly_prob: float = 0.13,
         drop_range: tuple[float, float] = (15.0, 25.0),
         spike_range: tuple[float, float] = (20.0, 35.0),
     ):
