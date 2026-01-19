@@ -54,20 +54,20 @@ services:
   # ----------------------------
   # PostgreSQL
   # ----------------------------
-  postgres:
-    image: postgres:16
-    container_name: postgresdb
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=P@sswordDb#Pi!2025
-      # - POSTGRES_DB=iotdb
-    networks:
-      - iot
-      - net-db
-    volumes:
-      - ./postgres-data/data:/var/lib/postgresql/data
+  # postgres:
+  #   image: postgres:16
+  #   container_name: postgresdb
+  #   ports:
+  #     - "5432:5432"
+  #   environment:
+  #     - POSTGRES_USER=postgres
+  #     - POSTGRES_PASSWORD=P@sswordDb#Pi!2025
+  #     # - POSTGRES_DB=iotdb
+  #   networks:
+  #     - iot
+  #     - net-db
+  #   volumes:
+  #     - ./postgres-data/data:/var/lib/postgresql/data
 
   # ----------------------------
   # MinIO (S3-compatible)
