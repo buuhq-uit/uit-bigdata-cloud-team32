@@ -1,5 +1,20 @@
 services:
   # ----------------------------
+  # Mosquitto MQTT Broker
+  # ----------------------------
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: mosquitto
+    restart: always
+    user: "${UID}:${GID}"
+    ports:
+      - "1883:1883"
+      - "6904:9001" # WebSocket port
+    networks:
+      - iot
+    volumes:
+      - ./mosquitto/config:/mosquitto/config
+  # ----------------------------
   # Kafka (official Apache image, KRaft mode, single node)
   # ----------------------------
   kafka:
@@ -54,20 +69,20 @@ services:
   # ----------------------------
   # PostgreSQL
   # ----------------------------
-  # postgres:
-  #   image: postgres:16
-  #   container_name: postgresdb
-  #   ports:
-  #     - "5432:5432"
-  #   environment:
-  #     - POSTGRES_USER=postgres
-  #     - POSTGRES_PASSWORD=P@sswordDb#Pi!2025
-  #     # - POSTGRES_DB=iotdb
-  #   networks:
-  #     - iot
-  #     - net-db
-  #   volumes:
-  #     - ./postgres-data/data:/var/lib/postgresql/data
+  postgres:
+    image: postgres:16
+    container_name: postgresdb
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=P@sswordDb#Pi!2025
+      # - POSTGRES_DB=iotdb
+    networks:
+      - iot
+      - net-db
+    volumes:
+      - ./postgres-data/data:/var/lib/postgresql/data
 
   # ----------------------------
   # MinIO (S3-compatible)
@@ -136,6 +151,13 @@ services:
       - DEFAULT_LOCATION=farm-zone-1
       - DEFAULT_MODEL=ESP32
       - API_KEY=team32-secret
+      # MQTT bridge
+      - MQTT_ENABLE=true
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
+      - MQTT_USERNAME=iot
+      - MQTT_PASSWORD=P@sswordMQTT#2025
+      - MQTT_TOPIC=iot/#
     networks:
       - iot
     ports:

@@ -8,7 +8,7 @@ WORKDIR /app
 # Copy and install dependencies
 # COPY requirements.txt .
 # RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install --no-cache-dir kafka-python fastapi uvicorn pydantic
+RUN pip install --no-cache-dir kafka-python fastapi uvicorn pydantic paho-mqtt
 
 # Copy app code
 COPY . .
