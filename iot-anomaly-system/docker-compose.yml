@@ -6,7 +6,7 @@ services:
     image: eclipse-mosquitto:latest
     container_name: mosquitto
     restart: always
-    user: "${UID}:${GID}"
+    # user: "${UID}:${GID}"
     ports:
       - "1883:1883"
       - "6904:9001" # WebSocket port
@@ -18,6 +18,9 @@ services:
   # Kafka (official Apache image, KRaft mode, single node)
   # ----------------------------
   kafka:
+    # build:
+    #   context: ./kafka
+    # image: kafka:3.7.2-local
     image: apache/kafka:3.7.2
     container_name: kafka
     ports:
@@ -45,7 +48,12 @@ services:
       - net-db
     volumes:
       - kafka_data:/var/lib/kafka/data
-
+    # healthcheck:
+    #   test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+    #   interval: 10s
+    #   timeout: 5s
+    #   retries: 12
+    #   start_period: 15s
   # ----------------------------
   # InfluxDB 2.x
   # ----------------------------
@@ -124,9 +132,14 @@ services:
   # Spark (official Apache image)
   # ----------------------------
   spark:
-    image: apache/spark:3.5.1
-    container_name: spark
+    build:
+      context: ./spark-app
+    image: spark-jobs:local
+    # image: apache/spark:3.5.1
+    container_name: spark-jobs
     command: ["sleep", "infinity"]
+    # command: ["bash", "/opt/spark-app/start_all_jobs.sh"]
+    # init: true
     volumes:
       - ./spark-app:/opt/spark-app
     networks:
@@ -137,6 +150,11 @@ services:
       - influxdb
       # - postgres
       - minio
+    # healthcheck:
+    #   test: ["CMD-SHELL", "pgrep -f job1_archive_to_minio.py && pgrep -f job2_speed_anomaly_to_influx.py"]
+    #   interval: 20s
+    #   timeout: 5s
+    #   retries: 6
 
   # ----------------------------
   # Ingress api
@@ -144,6 +162,7 @@ services:
   ingestion-api:
     build:
       context: ./ingestion-api
+    image: ingestion-api:local
     container_name: ingestion-api
     environment:
       - KAFKA_BOOTSTRAP=kafka:9092
@@ -164,6 +183,7 @@ services:
       - "6902:8000"
     depends_on:
       - kafka
+      - mosquitto
     restart: unless-stopped
 
 networks:

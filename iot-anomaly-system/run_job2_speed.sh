@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-echo "==> Start docker compose"
-docker compose up -d
+echo "==> Start Job2 compose"
+# docker compose up -d
 
 echo "==> Wait a bit for Kafka/Postgres/Influx to be ready (optional)"
 sleep 5
@@ -18,10 +18,10 @@ sleep 5
 # docker exec -d spark bash -lc "python /opt/spark-app/producer.py"
 
 # echo "==> Delete previous checkpoint (if any)"
-docker exec -it spark sh -lc 'rm -rf /tmp/spark-checkpoints/iot_anomaly_v2'
+docker exec -d spark-jobs sh -lc 'rm -rf /tmp/spark-checkpoints/iot_anomaly_v2'
 
 echo "==> Run Spark Streaming job (foreground, Ctrl+C to stop)"
-docker exec -it spark bash -lc '
+docker exec -d spark-jobs bash -lc '
 export PYTHONPATH=/opt/spark-app/.python:$PYTHONPATH
 
 # Kafka
@@ -42,8 +42,8 @@ export Z_THRESHOLD="1.0"
 # Postgres
 export WRITE_TO_POSTGRES=true
 export PG_URL="jdbc:postgresql://postgres:5432/iotdb"
-export PG_USER="iot"
-export PG_PASSWORD="iotpass"
+export PG_USER="postgres"
+export PG_PASSWORD="P@sswordDb#Pi!2025"
 export PG_TABLE="anomalies"
 
 # InfluxDB
@@ -61,5 +61,10 @@ export CHECKPOINT_DIR="/tmp/spark-checkpoints/iot_anomaly_v2"
    --conf spark.jars.ivy=/opt/spark-app/.ivy2 \
    --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 \
    --jars /opt/spark-app/postgresql.jar \
-   /opt/spark-app/job2_speed_anomaly_to_influx.py
+   /opt/spark-app/job2_speed_anomaly_to_influx.py \
+   > /opt/spark-app/job2.log 2>&1 &
 '
+
+# docker exec -it spark-jobs bash -lc 'tail -n 200 -f /opt/spark-app/job2.log'
+
+# docker exec -it spark-jobs bash -lc "ps aux | grep -F 'job2_speed_anomaly_to_influx.py' | grep -v grep"
