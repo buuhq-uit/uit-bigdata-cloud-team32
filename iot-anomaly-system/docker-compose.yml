@@ -186,6 +186,26 @@ services:
       - mosquitto
     restart: unless-stopped
 
+  # ----------------------------
+  # Anomaly Alert Service
+  # ----------------------------
+  anomaly-alert:
+    build:
+      context: ./anomaly-alert
+    image: anomaly-alert:local
+    container_name: anomaly-alert
+    environment:
+      - KAFKA_BOOTSTRAP=kafka:9092
+      - KAFKA_TOPIC_ANOMALY=iot.sensor.anomaly
+      - KAFKA_GROUP_ID=anomaly-alert-group
+      - SCORE_THRESHOLD=3.0
+      - ONLY_FLAGGED=true
+    networks:
+      - iot
+    depends_on:
+      - kafka
+    restart: unless-stopped
+
 networks:
   iot:
     name: iot
