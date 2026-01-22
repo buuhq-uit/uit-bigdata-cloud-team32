@@ -36,7 +36,7 @@ export WATERMARK_DELAY="20 seconds"
 export MIN_STD="0.05"
 
 # Anomaly detection test
-export Z_THRESHOLD="1.0"
+export Z_THRESHOLD="1.5"
 
 
 # Postgres

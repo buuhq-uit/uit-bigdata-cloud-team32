@@ -92,6 +92,10 @@ INFLUX_PRECISION = os.getenv("INFLUX_PRECISION", "ns")
 MEASUREMENT_METRICS = os.getenv("INFLUX_MEAS_METRICS", "sensor_metrics")
 MEASUREMENT_ANOMS = os.getenv("INFLUX_MEAS_ANOMS", "sensor_anomalies")
 
+# Kafka anomaly output (for alert-service)
+WRITE_TO_KAFKA = os.getenv("WRITE_TO_KAFKA", "true").lower() == "true"
+KAFKA_TOPIC_ANOMALY = os.getenv("KAFKA_TOPIC_ANOMALY", "iot.sensor.anomaly")
+
 # Keep requests sessions for efficiency
 _http = requests.Session()
 
@@ -246,6 +250,32 @@ def foreach_batch_writer(batch_df: DataFrame, batch_id: int) -> None:
     # ----------------------------
     if WRITE_TO_POSTGRES:
         write_to_postgres(anoms)
+
+    # ----------------------------
+    # Write anomalies to Kafka (JSON) for alert-service
+    # ----------------------------
+    if WRITE_TO_KAFKA:
+        try:
+            kafka_df = (
+                anoms
+                .selectExpr(
+                    "CAST(NULL AS STRING) AS key",
+                    "to_json(named_struct(\"ts\", CAST(ts AS STRING), \"device_id\", device_id, \"location\", location, \"model\", model, \"metric\", metric, \"value\", value, \"score\", score, \"severity\", severity, \"is_anomaly\", 1)) AS value"
+                )
+            )
+
+            # Avoid writing empty batches
+            if not kafka_df.rdd.isEmpty():
+                (
+                    kafka_df
+                    .write
+                    .format("kafka")
+                    .option("kafka.bootstrap.servers", KAFKA_BOOTSTRAP)
+                    .option("topic", KAFKA_TOPIC_ANOMALY)
+                    .save()
+                )
+        except Exception as e:
+            print(f"[WARN] Failed to write anomalies to Kafka: {e}")
 
     # ----------------------------
     # Write InfluxDB (line protocol via driver)

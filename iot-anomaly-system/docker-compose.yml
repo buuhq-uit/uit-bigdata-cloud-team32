@@ -71,6 +71,7 @@ services:
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=iot-token-123
     networks:
       - net-db
+      - iot
     volumes:
       - influx_data:/var/lib/influxdb2
 
@@ -124,6 +125,7 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     networks:
       - iot
+      - net-db
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning

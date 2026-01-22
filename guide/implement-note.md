@@ -301,7 +301,7 @@ limit 50;
 
 ## Bước 8 — Tạo dashboard nhanh trong Grafana (Minimum)
 
-Panel 1 – Realtime Sensor Metrics (Line chart) ✅ (bước này)
+Panel 1 – Realtime Sensor Metrics (Line chart) (bước này)
 Panel 2 – Anomaly score / anomaly flag (Realtime)
 Panel 3 – Anomaly count theo device (24h) – PostgreSQL
 
