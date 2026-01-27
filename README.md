@@ -66,3 +66,5 @@ MinIO Console: http://localhost:9001
 - PDF -> Báo cáo (Xúc tích, không quá 15 trang)
 - Link Video Demo (Nếu có), github (Nếu có) hoặc bất kỳ tham khảo nào phải đặt trong Page tham khảo của PPT.
 ```
+
+

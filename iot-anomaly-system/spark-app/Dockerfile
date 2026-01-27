@@ -1,4 +1,4 @@
-FROM apache/spark:3.5.1
+FROM apache/spark:3.5.7-python3
 
 USER root
 
@@ -11,8 +11,10 @@ ENV PYTHONUNBUFFERED=1
 ENV SPARK_HOME=/opt/spark
 WORKDIR /opt/spark-app
 
+ENV PYTHONPATH=/opt/spark-app
+
 # Copy app files (jobs + runner)
-COPY . /opt/spark-app
+# COPY . /opt/spark-app
 
 # Python deps needed by the jobs
 RUN pip3 install --no-cache-dir \
@@ -28,8 +30,8 @@ RUN pip3 install --no-cache-dir \
 # Postgres JDBC driver available to Spark
 # If you have a specific version jar, keep its name; otherwise postgresql.jar
 # The repo already contains /opt/spark-app/postgresql.jar
-RUN cp /opt/spark-app/postgresql.jar /opt/spark/jars/postgresql.jar
-
+# RUN cp /opt/spark-app/postgresql.jar /opt/spark/jars/postgresql.jar
+COPY ./postgresql.jar /opt/spark/jars/postgresql.jar
 # Pre-create ivy dir used by the script (optional but helpful)
 RUN mkdir -p /opt/spark-app/.ivy2
 

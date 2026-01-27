@@ -147,6 +147,10 @@ services:
     networks:
       - iot
       - net-db
+    environment:
+      - WRITE_TO_POSTGRES=true
+      - WRITE_TO_INFLUX=true
+      - Z_THRESHOLD=2.0
     depends_on:
       - kafka
       - influxdb
